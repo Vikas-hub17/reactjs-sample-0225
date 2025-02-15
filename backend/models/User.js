@@ -1,10 +1,8 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const UserSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  profilePic: String, // URL from picsum.photos
-  createdAt: { type: Date, default: Date.now }
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
 });
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model("User", UserSchema);
