@@ -1,25 +1,31 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import TaskBoard from './components/TaskBoard';
 import GlobalStyle from './globalStyles';
-import WalletInfo from "./components/WalletInfo";
 import LoginSignup from "./components/LoginSignup";
 
 function App() {
   return (
     <>
       <GlobalStyle />
-      <BrowserRouter>
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<LoginSignup />} />
-            <Route path="/taskboard" element={<TaskBoard />} />
-            <Route path="/wallet-info" element={<WalletInfo />} />
-          </Routes>
-        </div>
-      </BrowserRouter>
+      <Router>
+      <Routes>
+        {/* ✅ Default page is LoginSignup */}
+        <Route path="/" element={<LoginSignup />} />
+
+        {/* ✅ TaskBoard is protected, requires login */}
+        <Route path="/taskboard" element={<ProtectedRoute><TaskBoard /></ProtectedRoute>} />
+ 
+      </Routes>
+    </Router>
     </>
   );
 }
+
+// ✅ Protect the TaskBoard Route
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  return token ? children : <Navigate to="/" />;
+};
 
 export default App;

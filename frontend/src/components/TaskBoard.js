@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import TaskCard from "./TaskCard";
 import { BrowserProvider, formatEther } from "ethers";
-import { FaCopy, FaTimes, FaPlus } from "react-icons/fa";
+import { FaCopy, FaTimes, FaPlus, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const TaskBoard = () => {
   const dummyTasks = [
     { _id: "dummy1", title: "Design Homepage", description: "Create wireframe and UI design", dueDate: "2025-03-01T10:00", status: "To-Do" },
-    { _id: "dummy2", title: "API Development", description: "Build authentication API", dueDate: "2025-03-05T12:00", status: "In Progress" },
-    { _id: "dummy3", title: "Testing Features", description: "Perform unit and integration testing", dueDate: "2025-03-10T15:00", status: "Completed" }
+    { _id: "dummy2", title: "API Development", description: "Build authentication API", dueDate: "2025-03-05T12:00", status: "To-Do" },
+    { _id: "dummy3", title: "Testing Features", description: "Perform unit and integration testing", dueDate: "2025-03-10T15:00", status: "To-Do" }
   ];
   const [tasks, setTasks] = useState(dummyTasks); // ✅ Preload Dummy Tasks
   const [profilePic, setProfilePic] = useState("");
@@ -45,6 +45,20 @@ useEffect(() => {
     setNewTask({ ...newTask, [e.target.name]: e.target.value });
   };
 
+// ✅ Delete Task (Handles MongoDB & UI)
+const deleteTask = async (taskId) => {
+  const confirmDelete = window.confirm("Are you sure you want to delete this task?");
+  if (!confirmDelete) return;
+
+  try {
+    await axios.delete(`${API_BASE_URL}/tasks/${taskId}`);
+    setTasks(prevTasks => prevTasks.filter(task => task._id !== taskId));
+    setSelectedTask(null); // ✅ Close Modal After Deletion
+  } catch (error) {
+    console.error("Error deleting task:", error);
+  }
+};
+
 
   // ✅ Add Task (Fix to instantly update UI)
   const addTask = async () => {
@@ -68,24 +82,30 @@ useEffect(() => {
     }
   };
 
- // ✅ Update Task (Edit or Move)
- const updateTask = async (id, updates) => {
-  try {
-    const { data } = await axios.put(`${API_BASE_URL}/tasks/${id}`, updates);
-    setTasks(tasks.map(task => (task._id === id ? data : task)));
-  } catch (error) {
-    console.error("Error updating task:", error);
-  }
-};
+  // ✅ Move Task (Uses `updateTask` so it's not unused)
+  const moveTask = async (taskId, newStatus) => {
+    updateTask(taskId, { status: newStatus });
+  };
 
+  // ✅ Click the Circle to Move Task to "Completed" (Uses `updateTask`)
+  const markComplete = async (taskId) => {
+    updateTask(taskId, { status: "Completed" });
+  };
 
-  // ✅ Delete Task
-  const deleteTask = async (id) => {
-    try {
-      await axios.delete(`${API_BASE_URL}/tasks/${id}`);
-      setTasks(tasks.filter(task => task._id !== id));
-    } catch (error) {
-      console.error("Error deleting task:", error);
+  // ✅ Update Task (For Dummy & MongoDB Tasks)
+  const updateTask = async (taskId, updates) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task._id === taskId ? { ...task, ...updates } : task
+      )
+    );
+
+    if (!taskId.startsWith("dummy")) {
+      try {
+        await axios.put(`${API_BASE_URL}/tasks/${taskId}`, updates);
+      } catch (error) {
+        console.error("Error updating task:", error);
+      }
     }
   };
 
@@ -98,11 +118,6 @@ useEffect(() => {
   const saveTaskChanges = (updatedTask) => {
     setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
     setSelectedTask(null);
-  };
-
-  // Mark Task as Completed
-  const markComplete = (taskId) => {
-    setTasks(tasks.map(task => task.id === taskId ? { ...task, completed: true, list: "Completed" } : task));
   };
 
   useEffect(() => {
@@ -170,7 +185,7 @@ useEffect(() => {
         <TaskColumn>
           <h3>📌 To-Do</h3>
           {tasks.filter(task => task.status === "To-Do").map(task => (
-            <TaskCard key={task.id} task={task} markComplete={markComplete} openTaskModal={openTaskModal} />
+            <TaskCard key={task.id} task={task} moveTask={moveTask} markComplete={markComplete} openTaskModal={openTaskModal} />
           ))}
         </TaskColumn>
 
@@ -178,7 +193,7 @@ useEffect(() => {
         <TaskColumn>
           <h3>⚙️ In Progress</h3>
           {tasks.filter(task => task.status === "In Progress").map(task => (
-            <TaskCard key={task.id} task={task} markComplete={markComplete} openTaskModal={openTaskModal} />
+            <TaskCard key={task.id} task={task} moveTask={moveTask} markComplete={markComplete} openTaskModal={openTaskModal} />
           ))}
         </TaskColumn>
 
@@ -191,29 +206,33 @@ useEffect(() => {
       </TaskColumns>
 
       {selectedTask && (
-        <TaskModal>
-          <ModalHeader>
-            <h3>{selectedTask.title}</h3>
-            <ModalIcons>
-              <FaCopy onClick={() => navigator.clipboard.writeText(selectedTask.details)} />
-              <FaTimes onClick={() => setSelectedTask(null)} />
-            </ModalIcons>
-          </ModalHeader>
+  <TaskModal>
+    <ModalHeader>
+      <h3>{selectedTask.title}</h3>
+      <ModalIcons>
+        <FaCopy onClick={() => navigator.clipboard.writeText(selectedTask.details)} />
+        <FaTrash onClick={() => deleteTask(selectedTask._id)} style={{ color: "red", cursor: "pointer" }} />
+        <FaTimes onClick={() => setSelectedTask(null)} />
+      </ModalIcons>
+    </ModalHeader>
 
-          <Label>Details:</Label>
-          <TextArea value={selectedTask.details} onChange={(e) => setSelectedTask({ ...selectedTask, details: e.target.value })} />
-          <Label>Due Date:</Label>
-          <Input type="datetime-local" value={selectedTask.dueDate} onChange={(e) => setSelectedTask({ ...selectedTask, dueDate: e.target.value })} />
-          <Label>Move to List:</Label>
-          <Select value={selectedTask.list} onChange={(e) => setSelectedTask({ ...selectedTask, list: e.target.value })}>
-            <option value="To-Do">To-Do</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-          </Select>
+    <Label>Details:</Label>
+    <TextArea 
+      value={selectedTask.details} 
+      onChange={(e) => setSelectedTask({ ...selectedTask, details: e.target.value })} 
+    />
+    
+    <Label>Due Date:</Label>
+    <Input 
+      type="datetime-local" 
+      value={selectedTask.dueDate} 
+      onChange={(e) => setSelectedTask({ ...selectedTask, dueDate: e.target.value })} 
+    />  
 
-          <SaveButton onClick={() => saveTaskChanges(selectedTask)}>Save</SaveButton>
-        </TaskModal>
-      )}
+    <SaveButton onClick={() => saveTaskChanges(selectedTask)}>Save</SaveButton>
+  </TaskModal>
+)}
+
 
       {/* Floating Add Task Button */}
       <FloatingButton onClick={openModal}>

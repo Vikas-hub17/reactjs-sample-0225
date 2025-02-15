@@ -39,7 +39,22 @@
     ]
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-react": "^7.26.3",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.6.1",
+    "babel-jest": "^29.7.0",
+    "jest": "^27.5.1",
     "nodemon": "^3.1.9",
     "webpack": "^5.98.0"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(axios)/)"
+    ],
+    "moduleNameMapper": {
+      "^react-router-dom$": "reactjs-sample-0025/frontend/node_modules/react-router-dom"
+    }
   }
 }

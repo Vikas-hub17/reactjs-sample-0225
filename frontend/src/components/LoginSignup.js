@@ -3,88 +3,110 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api"; // Change to your backend URL if deployed
+const API_BASE_URL = "http://localhost:5000/api"; // Replace with your backend URL
 
 const LoginSignup = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [isLogin, setIsLogin] = useState(true); // Toggle between Login and Signup
+  const [userData, setUserData] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
 
-  // Auto-redirect if user is already logged in
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      navigate("/taskboard");
-    }
-  }, [navigate]);
 
-  // Handle Login/Signup
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!email || !password) {
-      alert("Please enter both email and password!");
-      return;
-    }
-
-    try {
-      if (isLogin) {
-        // Login Request
-        const { data } = await axios.post(`${API_BASE_URL}/login`, { email, password });
-        localStorage.setItem("token", data.token);
-        alert("Login successful!");
-        navigate("/taskboard"); // Redirect to TaskBoard
-      } else {
-        // Signup Request
-        await axios.post(`${API_BASE_URL}/signup`, { email, password });
-        alert("Signup successful! Please login.");
-        setIsLogin(true); // Switch to login form
-      }
-    } catch (error) {
-      alert(error.response?.data?.message || "Server error");
-    }
+  // ✅ Handle Input Change
+  const handleChange = (e) => {
+    setUserData({ ...userData, [e.target.name]: e.target.value });
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+  
+    if (!userData.email || !userData.password) {
+      setError("Please enter both email and password!");
+      return;
+    }
+  
+    try {
+      if (isLogin) {
+        // ✅ Login API Call
+        const { data } = await axios.post(`${API_BASE_URL}/auth/login`, userData);
+        localStorage.setItem("token", data.token);
+        navigate("/taskboard");
+      } else {
+        // ✅ Signup API Call (Make sure your backend has this route)
+        await axios.post(`${API_BASE_URL}/auth/signup`, userData);
+        alert("Signup successful! Please log in.");
+        setIsLogin(true); // Switch to login mode after signup
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || "Signup failed!");
+    }
+  };
+  
   return (
-    <Container>
-      <FormWrapper>
-        <Title>{isLogin ? "Login" : "Sign Up"}</Title>
+    <Wrapper>
+      <FormContainer>
+        <Logo>🚀 Task Manager</Logo>
+        <Title>{isLogin ? "Welcome Back" : "Create an Account"}</Title>
+        <Subtitle>{isLogin ? "Login to continue" : "Signup to get started"}</Subtitle>
+
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+
         <Form onSubmit={handleSubmit}>
-          <Input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <SubmitButton type="submit">{isLogin ? "Login" : "Sign Up"}</SubmitButton>
+          <Input type="email" name="email" placeholder="Email" value={userData.email} onChange={handleChange} required />
+          <Input type="password" name="password" placeholder="Password" value={userData.password} onChange={handleChange} required />
+
+          <SubmitButton type="submit">{isLogin ? "Login" : "Signup"}</SubmitButton>
         </Form>
-        <ToggleText onClick={() => setIsLogin(!isLogin)}>
-          {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}
-        </ToggleText>
-      </FormWrapper>
-    </Container>
+
+        <SwitchText>
+          {isLogin ? "Don't have an account?" : "Already have an account?"}  
+          <SwitchLink onClick={() => setIsLogin(!isLogin)}>
+            {isLogin ? " Sign up" : " Login"}
+          </SwitchLink>
+        </SwitchText>
+      </FormContainer>
+    </Wrapper>
   );
 };
 
-// Styled Components
-const Container = styled.div`
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #1e448f, #4a69bd);
-  height: 100vh;
+export default LoginSignup;
+
+// ✅ Styled Components
+const Wrapper = styled.div`
   display: flex;
-  justify-content: center;
+  height: 100vh;
   align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
 `;
 
-const FormWrapper = styled.div`
+const FormContainer = styled.div`
   background: white;
-  padding: 30px;
+  padding: 40px;
   border-radius: 10px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-  width: 300px;
   text-align: center;
+  width: 350px;
+  animation: fadeIn 0.5s ease-in-out;
+`;
+
+const Logo = styled.h1`
+  font-size: 28px;
+  font-weight: bold;
+  color: #1e3c72;
+  margin-bottom: 10px;
 `;
 
 const Title = styled.h2`
+  font-size: 24px;
+  margin-bottom: 5px;
+`;
+
+const Subtitle = styled.p`
+  font-size: 14px;
+  color: gray;
   margin-bottom: 20px;
-  color: #1e448f;
 `;
 
 const Form = styled.form`
@@ -93,34 +115,57 @@ const Form = styled.form`
 `;
 
 const Input = styled.input`
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #ddd;
   border-radius: 5px;
-`;
-
-const SubmitButton = styled.button`
-  background: #1e448f;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
   font-size: 16px;
+  transition: all 0.3s ease-in-out;
 
-  &:hover {
-    background: #4a69bd;
+  &:focus {
+    border-color: #1e3c72;
+    outline: none;
+    box-shadow: 0 0 5px rgba(30, 60, 114, 0.3);
   }
 `;
 
-const ToggleText = styled.p`
-  margin-top: 10px;
-  color: #1e448f;
+const SubmitButton = styled.button`
+  width: 100%;
+  padding: 12px;
+  background: #1e3c72;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
   cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  margin-top: 10px;
+
+  &:hover {
+    background: #163b7a;
+  }
+`;
+
+const SwitchText = styled.p`
+  font-size: 14px;
+  margin-top: 15px;
+`;
+
+const SwitchLink = styled.span`
+  color: #1e3c72;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
 
   &:hover {
     text-decoration: underline;
   }
 `;
 
-export default LoginSignup;
+const ErrorMessage = styled.p`
+  color: red;
+  font-size: 14px;
+  margin-bottom: 10px;
+`;
