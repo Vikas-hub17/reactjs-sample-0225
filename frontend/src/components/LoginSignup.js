@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api"; // Replace with your backend URL
+const API_BASE_URL = "https://reactjs-sample-0225.onrender.com/api"; // Replace with your backend URL
 
 const LoginSignup = () => {
   const navigate = useNavigate();
