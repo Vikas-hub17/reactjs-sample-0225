@@ -28,11 +28,3 @@ https://reactjs-sample-0225.netlify.app/
 ## Demo Video:
 
 
----
-
-## Instructions:
-1. **Replace placeholders** (`your-backend.onrender.com`, `your-frontend.netlify.app`, `your-demo-video-id`) with actual URLs.
-2. **Commit and push** the `README.md` file to your GitHub repository.
-
-This README is well-structured for **GitHub**, making it easier for users to understand, install, test, and deploy your project! 🚀
-
